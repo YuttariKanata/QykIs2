@@ -1,0 +1,13 @@
+# CMake build output
+/build/
+/out/
+
+# VSCode settings
+/.vscode/
+!.vscode/settings.json
+
+# C++ binaries & vcpkg
+*.o
+*.obj
+*.exe
+/vcpkg_installed/
