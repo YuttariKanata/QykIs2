@@ -7,3 +7,6 @@
 [submodule "externals/glfw"]
 	path = externals/glfw
 	url = https://github.com/glfw/glfw.git
+[submodule "externals/ac-library"]
+	path = externals/ac-library
+	url = https://github.com/atcoder/ac-library.git
