@@ -53,6 +53,7 @@ target_include_directories(QykIs2 PRIVATE
     ${IMGUI_DIR}
     ${IMGUI_DIR}/backends
     ${IMPLOT_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/externals/ac-library
 )
 
 target_link_libraries(QykIs2 PRIVATE
