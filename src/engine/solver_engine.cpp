@@ -5,14 +5,15 @@
 SolverEngine::SolverEngine() = default;
 
 SolverEngine::~SolverEngine() {
-    stop_search();
+    stop_search(); // デストラクタで確実に join して解放
 }
 
 void SolverEngine::start_search(const CurveConfig& config, int64_t max_d, int64_t max_X) {
-    stop_search(); // すでに走っていれば安全に停止
+    // 既存スレッドが動いている／完了して残っている場合、必ず先に止めて join する
+    stop_search();
 
-    is_running_ = true;
     stop_requested_ = false;
+    is_running_ = true;
     current_d_ = 0;
     total_checked_ = 0;
 
@@ -21,28 +22,30 @@ void SolverEngine::start_search(const CurveConfig& config, int64_t max_d, int64_
         found_points_.clear();
     }
 
+    // 新しいスレッドを起動
     worker_thread_ = std::thread(&SolverEngine::worker_loop, this, config, max_d, max_X);
 }
 
 void SolverEngine::stop_search() {
-    if (is_running_) {
-        stop_requested_ = true;
-        if (worker_thread_.joinable()) {
-            worker_thread_.join();
-        }
-        is_running_ = false;
+    stop_requested_ = true;
+    
+    // worker_thread_ が join 可能であれば必ず join してスレッドリソースを完全に閉じる
+    if (worker_thread_.joinable()) {
+        worker_thread_.join();
     }
+
+    is_running_ = false;
 }
 
 std::vector<RationalPoint> SolverEngine::pop_new_points() {
     std::lock_guard<std::mutex> lock(points_mutex_);
     std::vector<RationalPoint> result;
-    result.swap(found_points_); // Lock時間を最小限にするため swap
+    result.swap(found_points_);
     return result;
 }
 
 void SolverEngine::worker_loop(CurveConfig config, int64_t max_d, int64_t max_X) {
-    ModSieve sieve(50); // 小素数 p <= 50 の余りテーブルを自動準備
+    ModSieve sieve(50);
     uint64_t checked_count = 0;
 
     for (int64_t d = 1; d <= max_d && !stop_requested_; ++d) {
@@ -56,10 +59,8 @@ void SolverEngine::worker_loop(CurveConfig config, int64_t max_d, int64_t max_X)
         for (int64_t X = -max_X; X <= max_X && !stop_requested_; ++X) {
             checked_count++;
 
-            // [チェックA] 既約分数カット (gcd(X, d) == 1)
             if (std::gcd(X, d) != 1) continue;
 
-            // [チェックB] Mod Sieve フィルター (余り計算のみで98%超撃墜)
             bool pass_sieve = false;
             switch (config.degree) {
                 case CurveDegree::Degree3:
@@ -74,7 +75,6 @@ void SolverEngine::worker_loop(CurveConfig config, int64_t max_d, int64_t max_X)
             }
             if (!pass_sieve) continue;
 
-            // [チェックC] T(X, d) の 128bit 厳密評価 & isqrt128 完全平方数判定
             std::optional<int128_t> opt_Y;
             switch (config.degree) {
                 case CurveDegree::Degree3:
@@ -88,14 +88,9 @@ void SolverEngine::worker_loop(CurveConfig config, int64_t max_d, int64_t max_X)
                     break;
             }
 
-            // 有理点発見！
             if (opt_Y.has_value()) {
                 const int128_t Y = opt_Y.value();
 
-                // 同次座標の分母スケールを復元
-                // 3次: x = X/d^2, y = Y/d^3
-                // 4次: x = X/d,   y = Y/d^2
-                // 5次: x = X/d^2, y = Y/d^5 (※5次の標準同次形に対応)
                 int128_t den_x = 1, den_y = 1;
                 if (config.degree == CurveDegree::Degree3) {
                     den_x = d2; den_y = d3;
@@ -108,7 +103,6 @@ void SolverEngine::worker_loop(CurveConfig config, int64_t max_d, int64_t max_X)
                 std::lock_guard<std::mutex> lock(points_mutex_);
                 found_points_.push_back({X, den_x, Y, den_y});
                 if (Y != 0) {
-                    // y 軸対称点 (x, -y) も同時に記録
                     found_points_.push_back({X, den_x, -Y, den_y});
                 }
             }
@@ -118,5 +112,7 @@ void SolverEngine::worker_loop(CurveConfig config, int64_t max_d, int64_t max_X)
         checked_count = 0;
     }
 
+    // ループ終了時に is_running_ フラグのみを降ろす
+    // ※ worker_thread_ 自体の join は UI 側の Stop ボタンか、次回 start_search()/~SolverEngine() で安全に行う
     is_running_ = false;
 }

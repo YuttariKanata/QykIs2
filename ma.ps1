@@ -50,3 +50,5 @@ Write-Host "========================================" -ForegroundColor Green
 
 # 元のディレクトリに戻る
 Set-Location -Path $PSScriptRoot
+
+.\build\QykIs2.exe
