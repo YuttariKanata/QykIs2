@@ -6,12 +6,12 @@ QykIs2 github
 QykIs2/
 ├── CMakeLists.txt
 ├── src/
-│   ├── main.cpp              # GUI & イベントループ
-│   └── engine/               # 数理・探索コア
-│       ├── mod_sieve.hpp     # Mod p Sieve フィルター (作成済み)
-│       ├── exact_eval.hpp    # 128bit/多倍長による T(X,d) 評価と完全平方数判定 (新規)
-│       ├── solver_engine.hpp # バックエンド非同期探索スレッド (次回)
-│       └── solver_engine.cpp
+│   ├── main.cpp              # UI & イベントループ (ImGui)
+│   └── engine/
+│       ├── mod_sieve.hpp     # 1次フィルター (ACL modint + Horner法)
+│       ├── exact_eval.hpp    # 2次フィルター (isqrt128 + 完全平方判定)
+│       ├── solver_engine.hpp # [新規] 非同期スレッド制御 & 有理点構造体
+│       └── solver_engine.cpp # [新規] パイプライン探索ルーチン
 ```
 
 解の見つけ方
