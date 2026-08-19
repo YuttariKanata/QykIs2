@@ -9,6 +9,52 @@
 
 #include "engine/solver_engine.hpp"
 
+// --------------------------------------------------
+// 履歴管理データ構造
+// --------------------------------------------------
+struct PointLog {
+    std::string x_str;
+    std::string y_str;
+    double x_val;
+    double y_val;
+};
+
+struct SearchSession {
+    int degree = 3;
+    int a = 1, b = 1, c = 0, d = 0, e = 0, f = 0, g = 0;
+    int max_d = 50;
+    int max_X = 1000;
+    std::string formula_str;
+    std::vector<PointLog> points;
+};
+
+struct HistoryManager {
+    std::vector<SearchSession> sessions;
+    int current_index = -1;
+
+    void push_session(const SearchSession& session) {
+        // 途中の履歴に戻っている状態で新規 Search したら、それ以降の未来履歴を削除（ブラウザ挙動）
+        if (current_index >= 0 && current_index + 1 < static_cast<int>(sessions.size())) {
+            sessions.erase(sessions.begin() + current_index + 1, sessions.end());
+        }
+        sessions.push_back(session);
+        current_index = static_cast<int>(sessions.size()) - 1;
+    }
+
+    bool can_undo() const { return current_index > 0; }
+    bool can_redo() const { return current_index >= 0 && current_index + 1 < static_cast<int>(sessions.size()); }
+
+    void undo() { if (can_undo()) current_index--; }
+    void redo() { if (can_redo()) current_index++; }
+
+    const SearchSession* current_session() const {
+        if (current_index >= 0 && current_index < static_cast<int>(sessions.size())) {
+            return &sessions[current_index];
+        }
+        return nullptr;
+    }
+};
+
 // ImGui で QSplitter 風の挙動を実現する関数
 inline void Splitter(const char* name, float* thickness, float* left_width, float min_left, float min_right) {
     ImGui::PushID(name);
@@ -88,23 +134,34 @@ int main() {
     // --------------------------------------------------
     SolverEngine engine;
 
+    // 履歴マネージャーの追加
+    HistoryManager history;
+
     // ユーザー入力 (一般形: ay^2 = bx^3 + cx^2 + dx + e)
     int selected_degree = 3;
     int input_a = 1, input_b = 1, input_c = 0, input_d = 0, input_e = 0;
+    static int input_f = 0;
+    static int input_g = 0;
     int max_d = 50;
     int max_X = 1000;
 
-    // テーブル表示用ログ構造体
-    struct PointLog {
-        std::string x_str;
-        std::string y_str;
-        double x_val;
-        double y_val;
-    };
     std::vector<PointLog> found_log;
+
+    // 画面へパラメータと結果を復元するヘルパー関数
+    auto load_session_to_ui = [&](const SearchSession& sess) {
+        selected_degree = sess.degree;
+        input_a = sess.a; input_b = sess.b; input_c = sess.c;
+        input_d = sess.d; input_e = sess.e; input_f = sess.f; input_g = sess.g;
+        max_d = sess.max_d; max_X = sess.max_X;
+        found_log = sess.points;
+    };
+
+    // 前フレームの実行状態を保持するフラグ (完了検知用)
+    bool was_running_last_frame = false;
 
     // 3. メイン UI ループ
     while (!glfwWindowShouldClose(window)) {
+        
         glfwPollEvents();
 
         // バックエンドから新解を回収
@@ -114,12 +171,25 @@ int main() {
                 double x_val = static_cast<double>(pt.num_x) / static_cast<double>(pt.den_x);
                 double y_val = static_cast<double>(pt.num_y) / static_cast<double>(pt.den_y);
 
-                std::string x_str = std::to_string(static_cast<long long>(pt.num_x)) + "/" + std::to_string(static_cast<long long>(pt.den_x));
-                std::string y_str = std::to_string(static_cast<long long>(pt.num_y)) + "/" + std::to_string(static_cast<long long>(pt.den_y));
+                std::string x_str = std::to_string(static_cast<int64_t>(pt.num_x)) + "/" + std::to_string(static_cast<int64_t>(pt.den_x));
+                std::string y_str = std::to_string(static_cast<int64_t>(pt.num_y)) + "/" + std::to_string(static_cast<int64_t>(pt.den_y));
 
                 found_log.push_back({x_str, y_str, x_val, y_val});
             }
         }
+
+        // --- (C) 探索完了の瞬間（Running: true -> false）を検知して履歴へ保存 ---
+        if (was_running_last_frame && !engine.is_running()) {
+            SearchSession sess;
+            sess.degree = selected_degree;
+            sess.a = input_a; sess.b = input_b; sess.c = input_c;
+            sess.d = input_d; sess.e = input_e; sess.f = input_f; sess.g = input_g;
+            sess.max_d = max_d; sess.max_X = max_X;
+            sess.points = found_log; // 発見された点のリストをまるごと保存
+
+            history.push_session(sess);
+        }
+        was_running_last_frame = engine.is_running();
 
         // ImGui フレーム開始
         ImGui_ImplOpenGL3_NewFrame();
@@ -167,6 +237,36 @@ int main() {
             // 1. 左ペイン (ControlPanel)
             ImGui::BeginChild("ControlPanel", ImVec2(left_pane_width, 0), true);
             
+            // --- 履歴ナビゲーションバー ---
+            ImGui::BeginDisabled(!history.can_undo());
+            if (ImGui::Button("<", ImVec2(40, 30))) {
+                history.undo();
+                if (auto* sess = history.current_session()) {
+                    load_session_to_ui(*sess);
+                }
+            }
+            ImGui::EndDisabled();
+
+            ImGui::SameLine();
+
+            ImGui::BeginDisabled(!history.can_redo());
+            if (ImGui::Button(">", ImVec2(40, 30))) {
+                history.redo();
+                if (auto* sess = history.current_session()) {
+                    load_session_to_ui(*sess);
+                }
+            }
+            ImGui::EndDisabled();
+
+            ImGui::SameLine();
+            if (history.current_index >= 0) {
+                ImGui::Text("History [%d/%d]", history.current_index + 1, static_cast<int>(history.sessions.size()));
+            } else {
+                ImGui::Text("History [No Logs]");
+            }
+
+            ImGui::Separator();
+
             // 上部: エンジン設定 & コントロール
             ImGui::Text("QykIs2 Engine Settings");
             ImGui::Separator();
@@ -239,8 +339,8 @@ int main() {
 
             ImGui::Spacing();
             ImGui::Text("Status: %s", engine.is_running() ? "SEARCHING..." : "IDLE");
-            ImGui::Text("Current d: %lld / %d", static_cast<long long>(engine.current_d()), max_d);
-            ImGui::Text("Total Checked: %llu", static_cast<unsigned long long>(engine.total_checked()));
+            ImGui::Text("Current d: %lld / %d", static_cast<int64_t>(engine.current_d()), max_d);
+            ImGui::Text("Total Checked: %llu", static_cast<uint64_t>(engine.total_checked()));
             ImGui::Text("Points Found: %zu", found_log.size());
 
             // 左下に配置する Settings ボタン
