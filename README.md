@@ -14,6 +14,22 @@ QykIs2/
 │       └── solver_engine.cpp # [新規] パイプライン探索ルーチン
 ```
 
+main.cppが肥大化したのでこうするつもり...?
+
+```text
+src/
+├── main.cpp                  # 初期化とメインループのみ（50行程度）
+├── app_state.hpp             # アプリ全体の状態 (ViewMode, AppState 構造体)
+├── utils/
+│   ├── string_utils.hpp      # to_string_128
+│   └── history_manager.hpp   # HistoryManager / SearchSession
+└── ui/
+    ├── ui_components.hpp     # Splitter ハンドル
+    ├── view_workspace.cpp    # メインの探索ペイン
+    ├── view_history.cpp      # 履歴画面
+    └── view_settings.cpp     # 設定画面
+```
+
 解の見つけ方
 
 ```text

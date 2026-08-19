@@ -51,6 +51,9 @@ set(IMPLOT_SOURCES
 add_executable(QykIs2
     src/main.cpp
     src/engine/solver_engine.cpp
+    src/ui/view_workspace.cpp
+    src/ui/view_history.cpp
+    src/ui/view_settings.cpp
     ${IMGUI_SOURCES}
     ${IMPLOT_SOURCES}
 )
