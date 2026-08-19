@@ -6,11 +6,11 @@ QykIs2 github
 QykIs2/
 ├── CMakeLists.txt
 ├── src/
-│   ├── main.cpp              # GUI & イベントループ (UIレイヤー)
-│   └── engine/               # 数理・探索コア (エンジンレイヤー)
-│       ├── curve.hpp         # 3次・4次・n次多項式の評価関数
-│       ├── mod_sieve.hpp     # Mod p Sieve のテーブルと判定ロジック
-│       ├── solver_engine.hpp # バックエンド非同期スレッド制御クラス
+│   ├── main.cpp              # GUI & イベントループ
+│   └── engine/               # 数理・探索コア
+│       ├── mod_sieve.hpp     # Mod p Sieve フィルター (作成済み)
+│       ├── exact_eval.hpp    # 128bit/多倍長による T(X,d) 評価と完全平方数判定 (新規)
+│       ├── solver_engine.hpp # バックエンド非同期探索スレッド (次回)
 │       └── solver_engine.cpp
 ```
 

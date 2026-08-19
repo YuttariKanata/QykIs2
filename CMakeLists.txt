@@ -4,9 +4,15 @@ project(QykIs2 LANGUAGES CXX C)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-if(MSVC)
-    add_compile_options(/utf-8)
-    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+# --------------------------------------------------
+# GCC / MinGW (MSYS2 UCRT64) 向けコンパイル・リンク設定
+# --------------------------------------------------
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    add_compile_options(-finput-charset=UTF-8 -fexec-charset=UTF-8)
+    add_link_options(-static -static-libgcc -static-libstdc++)
+elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    add_compile_options(-finput-charset=UTF-8 -fexec-charset=UTF-8)
+    add_link_options(-static)
 endif()
 
 # --------------------------------------------------
@@ -56,7 +62,12 @@ target_include_directories(QykIs2 PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/externals/ac-library
 )
 
+# MSYS2 MinGW で GLFW を静的リンクする際に必要な Win32 システムライブラリを網羅
 target_link_libraries(QykIs2 PRIVATE
     glfw
     OpenGL::GL
+    gdi32
+    user32
+    kernel32
+    shell32
 )
