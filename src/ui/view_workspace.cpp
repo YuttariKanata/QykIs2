@@ -1,8 +1,10 @@
 #include "ui/views.hpp"
 #include "ui/ui_components.hpp"
 #include "utils/string_utils.hpp"
+#include "math/curve_transform.hpp"
 #include "imgui.h"
 #include <gmp.h>
+#include <gmpxx.h>
 #include <iostream>
 
 // std::string を ImGui::InputText で扱うためのヘルパー
@@ -105,73 +107,61 @@ void render_workspace_view(AppState& state) {
         if (ImGui::Button("Start Search", ImVec2(-1, 40))) {
             state.error_message.clear();
 
-            // 1. 各パラメータの parse_rational_input チェック
-            mpq_t mpq_a, mpq_b, mpq_c, mpq_d, mpq_e, mpq_f, mpq_g;
-            mpq_inits(mpq_a, mpq_b, mpq_c, mpq_d, mpq_e, mpq_f, mpq_g, nullptr);
+            // 1. 各パラメータを mpq_class 形式で parse_rational_input チェック
+            mpq_class q_a, q_b, q_c, q_d, q_e, q_f, q_g;
 
             bool ok = true;
-            if (!parse_rational_input(mpq_a, state.input_a)) { state.error_message = "Invalid coefficient 'a'"; ok = false; }
-            else if (!parse_rational_input(mpq_b, state.input_b)) { state.error_message = "Invalid coefficient 'b'"; ok = false; }
-            else if (!parse_rational_input(mpq_c, state.input_c)) { state.error_message = "Invalid coefficient 'c'"; ok = false; }
-            else if (!parse_rational_input(mpq_d, state.input_d)) { state.error_message = "Invalid coefficient 'd'"; ok = false; }
-            else if (!parse_rational_input(mpq_e, state.input_e)) { state.error_message = "Invalid coefficient 'e'"; ok = false; }
-            else if (state.selected_degree >= 4 && !parse_rational_input(mpq_f, state.input_f)) { state.error_message = "Invalid coefficient 'f'"; ok = false; }
-            else if (state.selected_degree == 5 && !parse_rational_input(mpq_g, state.input_g)) { state.error_message = "Invalid coefficient 'g'"; ok = false; }
+            if (!parse_rational_input(q_a, state.input_a))      { state.error_message = "Invalid coefficient 'a'"; ok = false; }
+            else if (!parse_rational_input(q_b, state.input_b)) { state.error_message = "Invalid coefficient 'b'"; ok = false; }
+            else if (!parse_rational_input(q_c, state.input_c)) { state.error_message = "Invalid coefficient 'c'"; ok = false; }
+            else if (!parse_rational_input(q_d, state.input_d)) { state.error_message = "Invalid coefficient 'd'"; ok = false; }
+            else if (!parse_rational_input(q_e, state.input_e)) { state.error_message = "Invalid coefficient 'e'"; ok = false; }
+            else if (state.selected_degree >= 4 && !parse_rational_input(q_f, state.input_f)) { state.error_message = "Invalid coefficient 'f'"; ok = false; }
+            else if (state.selected_degree == 5 && !parse_rational_input(q_g, state.input_g)) { state.error_message = "Invalid coefficient 'g'"; ok = false; }
 
             // a = 0 や b = 0 (最高次数が潰れる) のチェック
-            if (ok && mpq_sgn(mpq_a) == 0) {
+            if (ok && q_a == 0) {
                 state.error_message = "Coefficient 'a' cannot be zero";
                 ok = false;
             }
-            if (ok && mpq_sgn(mpq_b) == 0) {
+            if (ok && q_b == 0) {
                 state.error_message = "Highest degree coefficient 'b' cannot be zero";
                 ok = false;
             }
 
-            if (!ok) {
-                mpq_clears(mpq_a, mpq_b, mpq_c, mpq_d, mpq_e, mpq_f, mpq_g, nullptr);
-            } else {
+            if (ok) {
                 state.found_log.clear();
 
                 // --- [DEBUG LOG] パース結果の標準エラー出力 ---
                 std::cerr << "\n========== [DEBUG: Search Initiated] ==========\n";
                 std::cerr << "Degree: " << state.selected_degree << "\n";
-
-                // mpq_t を文字列化して出力するヘルパー（または gmp_fprintf を使用）
-                auto print_mpq = [](const char* name, const mpq_t q) {
-                    char* str = mpq_get_str(nullptr, 10, q);
-                    std::cerr << "  Coeff " << name << " = " << str << "\n";
-                    void (*freefunc)(void *, size_t);
-                    mp_get_memory_functions(nullptr, nullptr, &freefunc);
-                    freefunc(str, strlen(str) + 1); // GMPが確保したメモリの解放
-                };
-
-                print_mpq("a", mpq_a);
-                print_mpq("b", mpq_b);
-                print_mpq("c", mpq_c);
-                print_mpq("d", mpq_d);
-                print_mpq("e", mpq_e);
-                if (state.selected_degree >= 4) print_mpq("f", mpq_f);
-                if (state.selected_degree == 5) print_mpq("g", mpq_g);
+                std::cerr << " Coeff a = " << q_a.get_str() << "\n";
+                std::cerr << " Coeff b = " << q_b.get_str() << "\n";
+                std::cerr << " Coeff c = " << q_c.get_str() << "\n";
+                std::cerr << " Coeff d = " << q_d.get_str() << "\n";
+                std::cerr << " Coeff e = " << q_e.get_str() << "\n";
+                if (state.selected_degree >= 4) std::cerr << " Coeff f = " << q_f.get_str() << "\n";
+                if (state.selected_degree == 5) std::cerr << " Coeff g = " << q_g.get_str() << "\n";
 
                 std::cerr << "Limits: max_d = " << state.max_d << ", max_X = " << state.max_X << "\n";
                 std::cerr << "===============================================\n" << std::endl;
 
-                // 2. 将来的にここで一般形 -> 標準形（Weierstrass等）の有理数変形を実施
-                // 一旦暫定の int 変換でエンジンに渡す（後ほど有理数対応に拡張）
-                CurveConfig config;
-                if (state.selected_degree == 3) config.degree = CurveDegree::Degree3;
-                else if (state.selected_degree == 4) config.degree = CurveDegree::Degree4;
-                else if (state.selected_degree == 5) config.degree = CurveDegree::Degree5;
+                // 2. 有理数一般形 -> 整係数標準形 (Y^2 = A * f(x)) への変換実施
+                StandardCurveConfig std_config;
+                CurveTransformInfo transform_info;
 
-                config.a = static_cast<int>(mpz_get_si(mpq_numref(mpq_c)));
-                config.b = static_cast<int>(mpz_get_si(mpq_numref(mpq_d)));
-                config.c = static_cast<int>(mpz_get_si(mpq_numref(mpq_e)));
-                config.d_coeff = static_cast<int>(mpz_get_si(mpq_numref(mpq_f)));
+                bool norm_ok = normalize_curve(
+                    state.selected_degree,
+                    q_a, q_b, q_c, q_d, q_e, q_f, q_g,
+                    std_config, transform_info
+                );
 
-                mpq_clears(mpq_a, mpq_b, mpq_c, mpq_d, mpq_e, mpq_f, mpq_g, nullptr);
-
-                state.engine.start_search(config, state.max_d, state.max_X);
+                if (!norm_ok) {
+                    state.error_message = "Curve coefficients exceed 128-bit limit after normalization.";
+                } else {
+                    // エンジンへ正規化済み設定と変換情報を渡して探索開始
+                    state.engine.start_search(std_config, transform_info, state.max_d, state.max_X);
+                }
             }
         }
     }

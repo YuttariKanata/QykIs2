@@ -1,6 +1,8 @@
 #ifndef QYKIS2_MATH_INTEGER_MATH_HPP
 #define QYKIS2_MATH_INTEGER_MATH_HPP
 
+#include <gmp.h>
+#include <gmpxx.h>
 #include <cmath>
 #include <cstdint>
 #include <optional>
@@ -77,6 +79,54 @@ inline std::optional<int128_t> check_perfect_square(int128_t n) {
     }
 
     return std::nullopt;
+}
+
+// --------------------------------------------------
+// GMP mpz_t -> int128_t 安全変換
+// --------------------------------------------------
+inline bool mpz_class_to_int128(int128_t& dst, const mpz_class& src) {
+    if (mpz_sizeinbase(src.get_mpz_t(), 2) > 127) {
+        return false;
+    }
+
+    size_t count = 0;
+    uint64_t limbs[2] = {0, 0};
+    mpz_export(limbs, &count, -1, sizeof(uint64_t), 0, 0, src.get_mpz_t());
+
+    int128_t val = 0;
+    if (count > 0) val |= static_cast<int128_t>(limbs[0]);
+    if (count > 1) val |= (static_cast<int128_t>(limbs[1]) << 64);
+
+    if (src < 0) {
+        val = -val;
+    }
+
+    dst = val;
+    return true;
+}
+
+// int128_t を mpz_class へ安全にセットするヘルパー
+static inline void int128_to_mpz_class(mpz_class& dst, int128_t op) {
+    if (op == 0) {
+        dst = 0;
+        return;
+    }
+
+    bool is_negative = (op < 0);
+    uint128_t abs_op = is_negative ? static_cast<uint128_t>(-op) : static_cast<uint128_t>(op);
+
+    uint64_t limbs[2];
+    limbs[0] = static_cast<uint64_t>(abs_op);
+    limbs[1] = static_cast<uint64_t>(abs_op >> 64);
+
+    size_t count = (limbs[1] != 0) ? 2 : 1;
+    
+    // mpz_class の内部 mpz_t に直接 import
+    mpz_import(dst.get_mpz_t(), count, -1, sizeof(uint64_t), 0, 0, limbs);
+
+    if (is_negative) {
+        dst = -dst;
+    }
 }
 
 #endif // QYKIS2_MATH_INTEGER_MATH_HPP

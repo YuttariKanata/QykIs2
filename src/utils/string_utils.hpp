@@ -4,6 +4,8 @@
 #include <string>
 #include <algorithm>
 #include <gmp.h>
+#include <gmpxx.h>
+#include <stdexcept>
 #include "math/curve_eval.hpp" // int128_t の定義
 
 // --------------------------------------------------
@@ -28,23 +30,28 @@ inline std::string to_string_128(int128_t val) {
 // --------------------------------------------------
 // mpq_set_str による有理数文字列のパース & バリデーション
 // --------------------------------------------------
-inline bool parse_rational_input(mpq_t rop, const std::string& input_str) {
+inline bool parse_rational_input(mpq_class& rop, const std::string& input_str) {
     if (input_str.empty()) return false;
 
-    // 整数 "123" や 分数 "1/3", " 1 / 3 " をそのまま読み込める
-    if (mpq_set_str(rop, input_str.c_str(), 10) != 0) {
-        return false; // 不正文字列（アルファベット混入、記号重複など）
+    try {
+        // "123" や "1/3" などの文字列から直接構築
+        // 不正な文字列や "1/0" 等は例外が投げられる
+        rop = mpq_class(input_str, 10);
+        
+        // 既約分数化（標準形化）
+        rop.canonicalize();
+
+        // 分母が 0 でないことの念のため確認
+        if (rop.get_den() == 0) {
+            return false;
+        }
+
+        return true;
+    } catch (const std::invalid_argument&) {
+        return false; // アルファベット混入やパース失敗
+    } catch (const std::domain_error&) {
+        return false; // ゼロ除算 (1/0 等)
     }
-
-    // 分母が 0 判定 ("1/0" や "0/0" 対策)
-    if (mpz_cmp_ui(mpq_denref(rop), 0) == 0) {
-        return false;
-    }
-
-    // 既約分数化（標準形化）
-    mpq_canonicalize(rop);
-
-    return true;
 }
 
 #endif // QYKIS2_UTILS_STRING_UTILS_HPP

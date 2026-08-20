@@ -59,21 +59,25 @@ src/
 入力の変換
 
 ```text
-[UI: Input Strings] 
-       │ (parse_rational_input)
-       ▼
-[一般形の有理数係数 (mpq_t)]
-       │
-       ├─► [HistoryManager に保存 (SearchSession)]
-       │
-       ▼
-[curve_transform::normalize()]
-       │
-       ├─► 標準形の係数 (CurveConfig / __int128_t) ──► [Engine::start_search()]
-       │                                                         │ (解 u, v 発見)
-       └─► 変換情報 (CurveTransformInfo) ──────────┐              ▼
-                                                  └──► [逆変換: (u,v) -> (x,y)]
-                                                                  │
-                                                                  ▼
-                                                          [PointLog に追加]
+[1. UI 入力] (例: 一般形の係数 string)
+  │
+  ▼
+[2. 順変換] (math/curve_transform)
+  │  Input : 一般形の mpq_t 係数
+  │  Output: StandardCurveConfig (int128_t 係数)
+  │          CurveTransformInfo (逆変換用の行列/スケール情報)
+  │
+  ▼
+[3. Engine 起動] (engine/engine)
+  │  Input : StandardCurveConfig
+  │  ・Engine は高速な整数演算・ふるい落とし（exact_eval / mod_sieve）だけに集中！
+  │
+  ├─► [4. 標準形の解 (u, v) を発見]
+  │     │  Engine の出力: 有理点 (u, v) [mpq_t または (X, d, Y)]
+  │     ▼
+  └─► [5. 逆変換関数の呼び出し] (math/curve_transform)
+        │  Input : 解 (u, v) + CurveTransformInfo
+        │  Output: 元の曲線上の点 (x_str, y_str, double(x), double(y))
+        ▼
+[6. UI / PointLog へ納品]
 ```

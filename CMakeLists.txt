@@ -69,6 +69,7 @@ target_include_directories(QykIs2 PRIVATE
 # MSYS2 MinGW で GLFW を静的リンクする際に必要な Win32 システムライブラリを網羅
 target_link_libraries(QykIs2 PRIVATE
     gmp
+    gmpxx
     glfw
     OpenGL::GL
     gdi32
