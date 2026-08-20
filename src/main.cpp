@@ -5,7 +5,6 @@
 
 #include "app_state.hpp"
 #include "ui/views.hpp"
-#include "utils/string_utils.hpp"
 
 static void apply_theme(int style) {
     if (style == 0) ImGui::StyleColorsDark();
@@ -41,22 +40,8 @@ int main() {
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
 
-        // 1. バックエンドから解を回収
-        if (state.engine.is_running() || state.engine.current_d() > 0) {
-            auto new_points = state.engine.pop_new_points();
-            for (const auto& pt : new_points) {
-                double x_val = static_cast<double>(pt.num_x) / static_cast<double>(pt.den_x);
-                double y_val = static_cast<double>(pt.num_y) / static_cast<double>(pt.den_y);
-
-                std::string x_str = to_string_128(pt.num_x) + "/" + to_string_128(pt.den_x);
-                std::string y_str = to_string_128(pt.num_y) + "/" + to_string_128(pt.den_y);
-
-                state.found_log.push_back({x_str, y_str, x_val, y_val});
-            }
-        }
-
-        // 2. 探索完了検知 & 履歴追加
-        if (state.was_running_last_frame && !state.engine.is_running()) {
+        // 探索完了検知 & 履歴追加
+        if (state.was_running_last_frame && !state.engine.is_searching()) {
             SearchSession sess;
             sess.degree = state.selected_degree;
             sess.a_str = state.input_a;
@@ -72,9 +57,9 @@ int main() {
 
             state.history.push_session(sess);
         }
-        state.was_running_last_frame = state.engine.is_running();
+        state.was_running_last_frame = state.engine.is_searching();
 
-        // 3. UI 描画
+        // UI 描画
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
@@ -98,7 +83,7 @@ int main() {
 
         ImGui::End();
 
-        // 4. レンダリング
+        // レンダリング
         ImGui::Render();
         int display_w, display_h;
         glfwGetFramebufferSize(window, &display_w, &display_h);

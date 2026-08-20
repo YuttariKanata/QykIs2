@@ -1,6 +1,7 @@
 #ifndef QYKIS2_UTILS_STRING_UTILS_HPP
 #define QYKIS2_UTILS_STRING_UTILS_HPP
 
+#include "imgui.h"
 #include <string>
 #include <algorithm>
 #include <gmp.h>
@@ -52,6 +53,17 @@ inline bool parse_rational_input(mpq_class& rop, const std::string& input_str) {
     } catch (const std::domain_error&) {
         return false; // ゼロ除算 (1/0 等)
     }
+}
+
+// std::string を ImGui::InputText で扱うためのヘルパー
+static bool InputTextString(const char* label, std::string& str, ImGuiInputTextFlags flags = 0) {
+    char buf[128];
+    snprintf(buf, sizeof(buf), "%s", str.c_str());
+    if (ImGui::InputText(label, buf, sizeof(buf), flags)) {
+        str = buf;
+        return true;
+    }
+    return false;
 }
 
 #endif // QYKIS2_UTILS_STRING_UTILS_HPP

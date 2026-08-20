@@ -7,16 +7,6 @@
 #include <gmpxx.h>
 #include <iostream>
 
-// std::string を ImGui::InputText で扱うためのヘルパー
-static bool InputTextString(const char* label, std::string& str, ImGuiInputTextFlags flags = 0) {
-    char buf[128];
-    snprintf(buf, sizeof(buf), "%s", str.c_str());
-    if (ImGui::InputText(label, buf, sizeof(buf), flags)) {
-        str = buf;
-        return true;
-    }
-    return false;
-}
 
 void render_workspace_view(AppState& state) {
     // 1. 左ペイン (ControlPanel)
@@ -93,7 +83,7 @@ void render_workspace_view(AppState& state) {
     ImGui::Separator();
 
     // スタート / ストップ ボタン
-    if (state.engine.is_searching()) {
+if (state.engine.is_searching()) {
         ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.8f, 0.2f, 0.2f, 1.0f));
         ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.9f, 0.3f, 0.3f, 1.0f));
         ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.7f, 0.1f, 0.1f, 1.0f));
@@ -107,7 +97,6 @@ void render_workspace_view(AppState& state) {
         if (ImGui::Button("Start Search", ImVec2(-1, 40))) {
             state.error_message.clear();
 
-            // 1. 各パラメータを mpq_class 形式で parse_rational_input チェック
             mpq_class q_a, q_b, q_c, q_d, q_e, q_f, q_g;
 
             bool ok = true;
@@ -119,7 +108,6 @@ void render_workspace_view(AppState& state) {
             else if (state.selected_degree >= 4 && !parse_rational_input(q_f, state.input_f)) { state.error_message = "Invalid coefficient 'f'"; ok = false; }
             else if (state.selected_degree == 5 && !parse_rational_input(q_g, state.input_g)) { state.error_message = "Invalid coefficient 'g'"; ok = false; }
 
-            // a = 0 や b = 0 (最高次数が潰れる) のチェック
             if (ok && q_a == 0) {
                 state.error_message = "Coefficient 'a' cannot be zero";
                 ok = false;
@@ -132,21 +120,6 @@ void render_workspace_view(AppState& state) {
             if (ok) {
                 state.found_log.clear();
 
-                // --- [DEBUG LOG] パース結果の標準エラー出力 ---
-                std::cerr << "\n========== [DEBUG: Search Initiated] ==========\n";
-                std::cerr << "Degree: " << state.selected_degree << "\n";
-                std::cerr << " Coeff a = " << q_a.get_str() << "\n";
-                std::cerr << " Coeff b = " << q_b.get_str() << "\n";
-                std::cerr << " Coeff c = " << q_c.get_str() << "\n";
-                std::cerr << " Coeff d = " << q_d.get_str() << "\n";
-                std::cerr << " Coeff e = " << q_e.get_str() << "\n";
-                if (state.selected_degree >= 4) std::cerr << " Coeff f = " << q_f.get_str() << "\n";
-                if (state.selected_degree == 5) std::cerr << " Coeff g = " << q_g.get_str() << "\n";
-
-                std::cerr << "Limits: max_d = " << state.max_d << ", max_X = " << state.max_X << "\n";
-                std::cerr << "===============================================\n" << std::endl;
-
-                // 2. 有理数一般形 -> 整係数標準形 (Y^2 = A * f(x)) への変換実施
                 StandardCurveConfig std_config;
                 CurveTransformInfo transform_info;
 
@@ -159,7 +132,10 @@ void render_workspace_view(AppState& state) {
                 if (!norm_ok) {
                     state.error_message = "Curve coefficients exceed 128-bit limit after normalization.";
                 } else {
-                    // エンジンへ正規化済み設定と変換情報を渡して探索開始
+                    // 逆変換用情報を保持
+                    state.active_transform = transform_info;
+
+                    // 探索開始
                     state.engine.start_search(std_config, transform_info, state.max_d, state.max_X);
                 }
             }
@@ -193,6 +169,24 @@ void render_workspace_view(AppState& state) {
     // 3. 右ペイン (Table View)
     ImGui::BeginChild("RightPanel", ImVec2(0, 0), true);
 
+    // --------------------------------------------------
+    // SolverEngine から未処理の解 (u, v) を回収して逆変換
+    // (テーブル描画の直前で log を最新化する)
+    // --------------------------------------------------
+    auto raw_points = state.engine.pop_found_points();
+    for (const auto& pt : raw_points) {
+        mpz_class orig_x, orig_y;
+        if (map_point_to_original(pt.u, pt.v, state.active_transform, orig_x, orig_y)) {
+            std::string x_str = orig_x.get_str();
+            std::string y_str = orig_y.get_str();
+            double x_val = orig_x.get_d();
+            double y_val = orig_y.get_d();
+
+            state.found_log.push_back({x_str, y_str, x_val, y_val});
+        }
+    }
+
+    // テーブル表示
     ImGui::Text("Found Rational Points List:");
     if (ImGui::BeginTable("PointsTable", 3, 
             ImGuiTableFlags_Borders     |

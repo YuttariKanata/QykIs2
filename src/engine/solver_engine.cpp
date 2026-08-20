@@ -1,5 +1,7 @@
 #include "engine/solver_engine.hpp"
-#include <utility>
+#include "math/curve_eval.hpp"
+#include "math/integer_math.hpp"
+#include "engine/mod_sieve.hpp"
 
 void SolverEngine::start_search(
     const StandardCurveConfig& config,
@@ -7,56 +9,77 @@ void SolverEngine::start_search(
     int64_t max_d,
     int64_t max_X
 ) {
-    // 既に探索が動いている場合は一度確実に停止・ジョインする
     stop_search();
 
-    // フラグおよび進捗の初期化
     m_stop_requested.store(false);
-    m_is_searching.store(true);
     m_progress.store(0.0);
 
-    // ワーカースレッドの起動 (パラメータはスレッドローカルへコピー渡し)
-    m_worker = std::thread(
-        &SolverEngine::worker_thread,
-        this,
-        config,
-        transform,
-        max_d,
-        max_X
-    );
+    {
+        std::lock_guard<std::mutex> lock(m_queue_mutex);
+        m_found_queue.clear();
+    }
+
+    m_worker = std::thread(&SolverEngine::worker_thread, this, config, transform, max_d, max_X);
 }
 
 void SolverEngine::stop_search() {
-    // 停止フラグを立ててワーカースレッドのループ脱出を促す
     m_stop_requested.store(true);
-
     if (m_worker.joinable()) {
         m_worker.join();
     }
-
     m_is_searching.store(false);
 }
 
-// --------------------------------------------------
-// 以下、worker_thread の仮置き（次のステップで完全実装）
-// --------------------------------------------------
 void SolverEngine::worker_thread(
     StandardCurveConfig config,
     CurveTransformInfo transform,
     int64_t max_d,
     int64_t max_X
 ) {
-    // TODO: ModSieve の初期化および d, X の探索ループ
-    // 解検出時の処理イメージ:
-    // mpz_class ox, oy;
-    // if (map_point_to_original(u, v, transform, ox, oy)) {
-    //     PointCallback cb;
-    //     {
-    //         std::lock_guard<std::mutex> lock(m_cb_mutex);
-    //         cb = m_on_point_found;
-    //     }
-    //     if (cb) cb({ox, oy, u, v});
-    // }
+    m_is_searching.store(true);
 
+    ModSieve sieve;
+
+    // 発見した (u, v) を安全にキューへ追加するヘルパー
+    auto push_point = [this](int128_t u, int128_t v) {
+        std::lock_guard<std::mutex> lock(m_queue_mutex);
+        m_found_queue.push_back({u, v});
+    };
+
+    for (int64_t d = 1; d <= max_d; ++d) {
+        if (m_stop_requested.load(std::memory_order_relaxed)) {
+            break;
+        }
+
+        m_progress.store(static_cast<double>(d) / static_cast<double>(max_d));
+
+        // モジュラふるいの初期化
+        sieve.init_for_D(config, d);
+
+        for (int64_t X = -max_X; X <= max_X; ++X) {
+            if (!sieve.is_candidate(X)) {
+                continue;
+            }
+
+            std::optional<int128_t> opt_Y;
+            if (config.degree == 3) {
+                opt_Y = eval_exact_deg3(config, X, d);
+            } else if (config.degree == 4) {
+                opt_Y = eval_exact_deg4(config, X, d);
+            } else if (config.degree == 5) {
+                opt_Y = eval_exact_deg5(config, X, d);
+            }
+
+            if (opt_Y.has_value()) {
+                const int128_t Y = opt_Y.value();
+                push_point(X, Y);
+                if (Y != 0) {
+                    push_point(X, -Y);
+                }
+            }
+        }
+    }
+
+    m_progress.store(1.0);
     m_is_searching.store(false);
 }

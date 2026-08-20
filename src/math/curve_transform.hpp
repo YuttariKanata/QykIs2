@@ -14,13 +14,12 @@ using int128_t = __int128_t;
 struct StandardCurveConfig {
     int degree = 3; // 曲線次数 (3, 4, 5)
 
-    // Y^2 = coeff_x_max * x^d + coeff_c2 * x^(d-1) + ...
-    int128_t coeff_x_max = 0; // 最高次項の係数 (A * B)
-    int128_t coeff_c2    = 0; // x^(d-1) の係数 (A * C)
-    int128_t coeff_c3    = 0; // x^(d-2) の係数 (A * D)
-    int128_t coeff_c4    = 0; // x^(d-3) の係数 (A * E)
-    int128_t coeff_c5    = 0; // x^(d-4) の係数 (4次以上)
-    int128_t coeff_c6    = 0; // 定数項       (5次以上)
+    int128_t coeff_x_max = 0; 
+    int128_t coeff_c2    = 0; 
+    int128_t coeff_c3    = 0; 
+    int128_t coeff_c4    = 0; 
+    int128_t coeff_c5    = 0; 
+    int128_t coeff_c6    = 0; 
 };
 
 // --------------------------------------------------

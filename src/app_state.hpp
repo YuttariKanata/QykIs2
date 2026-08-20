@@ -3,6 +3,7 @@
 
 #include <string>
 #include <vector>
+#include "math/curve_transform.hpp"
 #include "engine/solver_engine.hpp"
 #include "utils/history_manager.hpp"
 
@@ -31,6 +32,9 @@ struct AppState {
     std::string input_g = "0";
     int max_d = 50;
     int max_X = 1000;
+
+    // 逆変換用情報をフレーム間で保持する変数
+    CurveTransformInfo active_transform;
 
     // エラーハンドリング用
     std::string error_message = "";

@@ -54,6 +54,7 @@ add_executable(QykIs2
     src/ui/view_workspace.cpp
     src/ui/view_history.cpp
     src/ui/view_settings.cpp
+    src/math/curve_transform.cpp
     ${IMGUI_SOURCES}
     ${IMPLOT_SOURCES}
 )
