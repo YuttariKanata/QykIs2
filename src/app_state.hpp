@@ -1,6 +1,8 @@
 #ifndef QYKIS2_APP_STATE_HPP
 #define QYKIS2_APP_STATE_HPP
 
+#include <string>
+#include <vector>
 #include "engine/solver_engine.hpp"
 #include "utils/history_manager.hpp"
 
@@ -18,12 +20,20 @@ struct AppState {
     int theme_style = 0;
     float left_pane_width = 450.0f;
 
-    // 探索パラメータ入力値
+    // 探索パラメータ入力値（有理数文字列で保持）
     int selected_degree = 3;
-    int input_a = 1, input_b = 1, input_c = 0, input_d = 0, input_e = 0;
-    int input_f = 0, input_g = 0;
+    std::string input_a = "1";
+    std::string input_b = "1";
+    std::string input_c = "0";
+    std::string input_d = "0";
+    std::string input_e = "0";
+    std::string input_f = "0";
+    std::string input_g = "0";
     int max_d = 50;
     int max_X = 1000;
+
+    // エラーハンドリング用
+    std::string error_message = "";
 
     // ログ＆バックエンド
     std::vector<PointLog> found_log;
@@ -32,19 +42,21 @@ struct AppState {
 
     bool was_running_last_frame = false;
 
+    // 履歴ロード（SearchSession 側も string 化に合わせて更新）
     void load_session(const SearchSession& sess) {
         selected_degree = sess.degree;
-        input_a = sess.a;
-        input_b = sess.b;
-        input_c = sess.c;
-        input_d = sess.d;
-        input_e = sess.e;
-        input_f = sess.f;
-        input_g = sess.g;
+        input_a = sess.a_str;
+        input_b = sess.b_str;
+        input_c = sess.c_str;
+        input_d = sess.d_str;
+        input_e = sess.e_str;
+        input_f = sess.f_str;
+        input_g = sess.g_str;
         max_d = sess.max_d;
         max_X = sess.max_X;
         found_log = sess.points;
+        error_message.clear();
     }
 };
 
-#endif
+#endif // QYKIS2_APP_STATE_HPP

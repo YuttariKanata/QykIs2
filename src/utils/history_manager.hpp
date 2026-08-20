@@ -15,7 +15,13 @@ struct PointLog {
 // 1回の探索の全状態（パラメータ＋結果）を保持する構造体
 struct SearchSession {
     int degree = 3;
-    int a = 1, b = 1, c = 0, d = 0, e = 0, f = 0, g = 0;
+    std::string a_str = "1";
+    std::string b_str = "1";
+    std::string c_str = "0";
+    std::string d_str = "0";
+    std::string e_str = "0";
+    std::string f_str = "0";
+    std::string g_str = "0";
     int max_d = 50;
     int max_X = 1000;
     std::string formula_str;

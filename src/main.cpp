@@ -59,9 +59,15 @@ int main() {
         if (state.was_running_last_frame && !state.engine.is_running()) {
             SearchSession sess;
             sess.degree = state.selected_degree;
-            sess.a = state.input_a; sess.b = state.input_b; sess.c = state.input_c;
-            sess.d = state.input_d; sess.e = state.input_e; sess.f = state.input_f; sess.g = state.input_g;
-            sess.max_d = state.max_d; sess.max_X = state.max_X;
+            sess.a_str = state.input_a;
+            sess.b_str = state.input_b;
+            sess.c_str = state.input_c;
+            sess.d_str = state.input_d;
+            sess.e_str = state.input_e;
+            sess.f_str = state.input_f;
+            sess.g_str = state.input_g;
+            sess.max_d = state.max_d;
+            sess.max_X = state.max_X;
             sess.points = state.found_log;
 
             state.history.push_session(sess);
