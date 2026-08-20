@@ -6,7 +6,7 @@
 #include <mutex>
 #include <atomic>
 #include <cstdint>
-#include "engine/exact_eval.hpp"
+#include "math/curve_eval.hpp"
 
 enum class CurveDegree {
     Degree3,

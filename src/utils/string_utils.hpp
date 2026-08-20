@@ -4,7 +4,7 @@
 #include <string>
 #include <algorithm>
 #include <gmp.h>
-#include "engine/exact_eval.hpp" // int128_t の定義
+#include "math/curve_eval.hpp" // int128_t の定義
 
 // --------------------------------------------------
 // 128bit 整数を十進数文字列へ変換

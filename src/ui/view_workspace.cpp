@@ -3,6 +3,7 @@
 #include "utils/string_utils.hpp"
 #include "imgui.h"
 #include <gmp.h>
+#include <iostream>
 
 // std::string を ImGui::InputText で扱うためのヘルパー
 static bool InputTextString(const char* label, std::string& str, ImGuiInputTextFlags flags = 0) {
@@ -131,6 +132,30 @@ void render_workspace_view(AppState& state) {
                 mpq_clears(mpq_a, mpq_b, mpq_c, mpq_d, mpq_e, mpq_f, mpq_g, nullptr);
             } else {
                 state.found_log.clear();
+
+                // --- [DEBUG LOG] パース結果の標準エラー出力 ---
+                std::cerr << "\n========== [DEBUG: Search Initiated] ==========\n";
+                std::cerr << "Degree: " << state.selected_degree << "\n";
+
+                // mpq_t を文字列化して出力するヘルパー（または gmp_fprintf を使用）
+                auto print_mpq = [](const char* name, const mpq_t q) {
+                    char* str = mpq_get_str(nullptr, 10, q);
+                    std::cerr << "  Coeff " << name << " = " << str << "\n";
+                    void (*freefunc)(void *, size_t);
+                    mp_get_memory_functions(nullptr, nullptr, &freefunc);
+                    freefunc(str, strlen(str) + 1); // GMPが確保したメモリの解放
+                };
+
+                print_mpq("a", mpq_a);
+                print_mpq("b", mpq_b);
+                print_mpq("c", mpq_c);
+                print_mpq("d", mpq_d);
+                print_mpq("e", mpq_e);
+                if (state.selected_degree >= 4) print_mpq("f", mpq_f);
+                if (state.selected_degree == 5) print_mpq("g", mpq_g);
+
+                std::cerr << "Limits: max_d = " << state.max_d << ", max_X = " << state.max_X << "\n";
+                std::cerr << "===============================================\n" << std::endl;
 
                 // 2. 将来的にここで一般形 -> 標準形（Weierstrass等）の有理数変形を実施
                 // 一旦暫定の int 変換でエンジンに渡す（後ほど有理数対応に拡張）
