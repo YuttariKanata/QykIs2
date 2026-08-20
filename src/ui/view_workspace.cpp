@@ -93,7 +93,7 @@ void render_workspace_view(AppState& state) {
     ImGui::Separator();
 
     // スタート / ストップ ボタン
-    if (state.engine.is_running()) {
+    if (state.engine.is_searching()) {
         ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.8f, 0.2f, 0.2f, 1.0f));
         ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.9f, 0.3f, 0.3f, 1.0f));
         ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.7f, 0.1f, 0.1f, 1.0f));
@@ -167,9 +167,8 @@ void render_workspace_view(AppState& state) {
     }
 
     ImGui::Spacing();
-    ImGui::Text("Status: %s", state.engine.is_running() ? "SEARCHING..." : "IDLE");
-    ImGui::Text("Current d: %lld / %d", static_cast<int64_t>(state.engine.current_d()), state.max_d);
-    ImGui::Text("Total Checked: %llu", static_cast<uint64_t>(state.engine.total_checked()));
+    ImGui::Text("Status: %s", state.engine.is_searching() ? "SEARCHING..." : "IDLE");
+    ImGui::Text("Progress: %.1f%%", state.engine.get_progress() * 100.0);
     ImGui::Text("Points Found: %zu", state.found_log.size());
 
     ImGui::Spacing();
