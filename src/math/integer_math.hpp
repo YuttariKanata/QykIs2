@@ -6,6 +6,7 @@
 #include <cmath>
 #include <cstdint>
 #include <optional>
+#include <atcoder/modint>
 
 #if defined(__SIZEOF_INT128__)
     using int128_t = __int128_t;
@@ -13,6 +14,13 @@
 #else
     #error "128-bit integer support (__int128_t) is required for QykIs2 Engine."
 #endif
+
+// __int128_t / int128_t 用の非負剰余関数
+inline constexpr int mod_p(int128_t val, int p) noexcept {
+    int128_t m = val % p;
+    if (m < 0) m += p;
+    return static_cast<int>(m);
+}
 
 // --------------------------------------------------
 // 超高速 128bit bit / isqrt モジュール
@@ -97,7 +105,7 @@ inline std::optional<int128_t> check_perfect_square(int128_t n) {
 }
 
 // --------------------------------------------------
-// GMP mpz_t -> int128_t 安全変換
+// GMP mpz_t/mpz_class <---> int128_t 安全変換
 // --------------------------------------------------
 inline bool mpz_class_to_int128(int128_t& dst, const mpz_class& src) {
     if (mpz_sizeinbase(src.get_mpz_t(), 2) > 127) {
