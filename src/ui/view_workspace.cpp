@@ -104,11 +104,10 @@ void render_workspace_view(AppState& state) {
 
     ImGui::Spacing();
     ImGui::Separator();
-    if (ImGui::Button("History Log", ImVec2(150, 35))) {
+    if (ImGui::Button("History Log", ImVec2(-1, 35))) {
         state.current_view = ViewMode::History;
     }
-    ImGui::SameLine();
-    if (ImGui::Button("Settings", ImVec2(150, 35))) {
+    if (ImGui::Button("Settings", ImVec2(-1, 35))) {
         state.current_view = ViewMode::Settings;
     }
 
@@ -126,7 +125,14 @@ void render_workspace_view(AppState& state) {
     ImGui::BeginChild("RightPanel", ImVec2(0, 0), true);
 
     ImGui::Text("Found Rational Points List:");
-    if (ImGui::BeginTable("PointsTable", 3, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY, ImVec2(-1, -1))) {
+    if (ImGui::BeginTable("PointsTable", 3, 
+            ImGuiTableFlags_Borders     |
+            ImGuiTableFlags_RowBg       |
+            ImGuiTableFlags_ScrollY     |
+            ImGuiTableFlags_Resizable   |
+            ImGuiTableFlags_Reorderable |
+            ImGuiTableFlags_Hideable    ,
+            ImVec2(-1, -1))) {
         ImGui::TableSetupColumn("x = num/den", ImGuiTableColumnFlags_WidthStretch);
         ImGui::TableSetupColumn("y = num/den", ImGuiTableColumnFlags_WidthStretch);
         ImGui::TableSetupColumn("Approx (x, y)", ImGuiTableColumnFlags_WidthStretch);

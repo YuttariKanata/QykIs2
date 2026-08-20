@@ -19,7 +19,7 @@ void render_settings_view(AppState& state, void(*apply_theme)(int)) {
     ImGui::Separator();
     ImGui::Spacing();
 
-    if (ImGui::Button("Back to Workspace", ImVec2(220, 40))) {
+    if (ImGui::Button("Back to Workspace", ImVec2(330, 40))) {
         state.current_view = ViewMode::Workspace;
     }
 }

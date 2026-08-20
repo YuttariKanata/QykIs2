@@ -9,7 +9,16 @@ void render_history_view(AppState& state) {
     if (state.history.sessions.empty()) {
         ImGui::TextDisabled("No history available yet. Run a search first!");
     } else {
-        if (ImGui::BeginTable("HistoryTable", 5, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY, ImVec2(-1, -100))) {
+// BeginTable の第 3 引数に ImGuiTableFlags_Resizable を追加
+        if (ImGui::BeginTable("HistoryTable", 5, 
+            ImGuiTableFlags_Borders     |
+            ImGuiTableFlags_RowBg       |
+            ImGuiTableFlags_ScrollY     |
+            ImGuiTableFlags_Resizable   |
+            ImGuiTableFlags_Reorderable |
+            ImGuiTableFlags_Hideable    ,
+            ImVec2(-1, -100))) 
+        {
             ImGui::TableSetupColumn("ID", ImGuiTableColumnFlags_WidthFixed, 60.0f);
             ImGui::TableSetupColumn("Degree", ImGuiTableColumnFlags_WidthFixed, 100.0f);
             ImGui::TableSetupColumn("Range (d / X)", ImGuiTableColumnFlags_WidthStretch);
@@ -43,7 +52,7 @@ void render_history_view(AppState& state) {
     ImGui::Separator();
     ImGui::Spacing();
 
-    if (ImGui::Button("Back to Workspace", ImVec2(220, 40))) {
+    if (ImGui::Button("Back to Workspace", ImVec2(330, 40))) {
         state.current_view = ViewMode::Workspace;
     }
 }
