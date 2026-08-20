@@ -66,19 +66,22 @@ bool normalize_curve(
 /**
  * @brief 探索によって見つかった標準形上の点 (u, v) を元の曲線上の (x, y) に復元する
  * 
- * @param u 探索結果の X 座標 (x = u)
- * @param v 探索結果の Y 座標 (Y = v)
- * @param transform 逆変換情報
- * @param out_x [out] 復元された元の x 座標 (mpz_class)
- * @param out_y [out] 復元された元の y 座標 (mpz_class)
+ * @param u 探索結果の X 座標 (x = u/d^?)
+ * @param v 探索結果の Y 座標 (Y = v/(A*d^?))
+ * @param d 探索結果の d 分母
+ * @param transform 逆変換情報 (Aの値のみ)
+ * @param out_x [out] 復元された元の x 座標 (mpq_class)
+ * @param out_y [out] 復元された元の y 座標 (mpq_class)
  * @return bool v % scale_A == 0 であり、元の曲線上で整点yとなったか
  */
 bool map_point_to_original(
-    int128_t u,
-    int128_t v,
+    int128_t u,                    // X
+    int128_t v,                    // Y
+    int64_t d,                     // 分母パラメータ d
+    int degree,                    // 曲線次数 (3, 4, 5)
     const CurveTransformInfo& transform,
-    mpz_class& out_x,
-    mpz_class& out_y
+    mpq_class& out_x,              // 元の有理数 x
+    mpq_class& out_y               // 元の有理数 y
 );
 
 #endif // MATH_CURVE_TRANSFORM_HPP

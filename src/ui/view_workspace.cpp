@@ -175,9 +175,9 @@ if (state.engine.is_searching()) {
     // --------------------------------------------------
     auto raw_points = state.engine.pop_found_points();
     for (const auto& pt : raw_points) {
-        mpz_class orig_x, orig_y;
-        if (map_point_to_original(pt.u, pt.v, state.active_transform, orig_x, orig_y)) {
-            std::string x_str = orig_x.get_str();
+        mpq_class orig_x, orig_y;
+        if (map_point_to_original(pt.u, pt.v, pt.d, state.selected_degree, state.active_transform, orig_x, orig_y)) {
+            std::string x_str = orig_x.get_str(); // "3/4" のような分数文字列ができる
             std::string y_str = orig_y.get_str();
             double x_val = orig_x.get_d();
             double y_val = orig_y.get_d();

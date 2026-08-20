@@ -10,8 +10,9 @@
 
 // 探索スレッドが見つけた標準形上の生の座標 (u, v)
 struct FoundPoint {
-    int128_t u;
-    int128_t v;
+    int128_t u; // X
+    int128_t v; // Y
+    int64_t  d; // 分母パラメータ d
 };
 
 class SolverEngine {

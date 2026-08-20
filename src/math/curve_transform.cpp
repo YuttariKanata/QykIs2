@@ -77,28 +77,53 @@ bool normalize_curve(
 }
 
 bool map_point_to_original(
-    int128_t u,
-    int128_t v,
+    int128_t u,                    // X
+    int128_t v,                    // Y
+    int64_t d,                     // d
+    int degree,                    // 曲線次数 (3, 4, 5)
     const CurveTransformInfo& transform,
-    mpz_class& out_x,
-    mpz_class& out_y
+    mpq_class& out_x,
+    mpq_class& out_y
 ) {
-    // 0 除算防止バリデーション
-    if (transform.scale_A == 0) {
+    if (transform.scale_A == 0 || d == 0) {
         return false;
     }
 
-    // v が scale_A で割り切れない場合、元の曲線上で y が整解にならない
-    if (v % transform.scale_A != 0) {
+    // int128_t を mpz_class に変換するヘルパーを使用
+    mpz_class mpz_X, mpz_Y, mpz_A, mpz_d;
+    int128_to_mpz_class(mpz_X, u);
+    int128_to_mpz_class(mpz_Y, v);
+    int128_to_mpz_class(mpz_A, transform.scale_A);
+    int128_to_mpz_class(mpz_d, d);
+
+    mpz_class num_x = mpz_X;
+    mpz_class den_x = 1;
+    mpz_class num_y = mpz_Y;
+    mpz_class den_y = mpz_A;
+
+    // 次数に応じて d の冪乗を計算して分母に掛ける
+    if (degree == 3) {
+        // x = X / d^2,  y = Y / (A * d^3)
+        den_x = mpz_d * mpz_d;
+        den_y *= (mpz_d * mpz_d * mpz_d);
+    } else if (degree == 4) {
+        // x = X / d,    y = Y / (A * d^2)
+        den_x = mpz_d;
+        den_y *= (mpz_d * mpz_d);
+    } else if (degree == 5) {
+        // x = X / d^2,  y = Y / (A * d^5)
+        den_x = mpz_d * mpz_d;
+        den_y *= (mpz_d * mpz_d * mpz_d * mpz_d * mpz_d);
+    } else {
         return false;
     }
 
-    // 1. x 座標の復元 (x = u)
-    int128_to_mpz_class(out_x, u);
+    // 有理数 mpq_class に設定して約分 (canonicalize)
+    out_x = mpq_class(num_x, den_x);
+    out_x.canonicalize();
 
-    // 2. y 座標の復元 (y = v / scale_A)
-    int128_t y_val = v / transform.scale_A;
-    int128_to_mpz_class(out_y, y_val);
+    out_y = mpq_class(num_y, den_y);
+    out_y.canonicalize();
 
     return true;
 }

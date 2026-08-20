@@ -40,16 +40,16 @@ void SolverEngine::worker_thread(
 
     ModSieve sieve;
 
-    // 発見した (u, v) を安全にキューへ追加するヘルパー
-    auto push_point = [this](int128_t u, int128_t v) {
-        std::lock_guard<std::mutex> lock(m_queue_mutex);
-        m_found_queue.push_back({u, v});
-    };
-
     for (int64_t d = 1; d <= max_d; ++d) {
         if (m_stop_requested.load(std::memory_order_relaxed)) {
             break;
         }
+
+        // 発見した (u, v) を安全にキューへ追加するヘルパー
+        auto push_point = [this, d](int128_t u, int128_t v) {
+            std::lock_guard<std::mutex> lock(m_queue_mutex);
+            m_found_queue.push_back({u, v, d});
+        };
 
         m_progress.store(static_cast<double>(d) / static_cast<double>(max_d));
 
