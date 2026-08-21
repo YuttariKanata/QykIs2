@@ -1,30 +1,24 @@
 # QykIs2
 
 QykIs2 github
+(Solver 第4世代)
 
-```text
-QykIs2/
-├── CMakeLists.txt
-├── src/
-│   ├── main.cpp              # UI & イベントループ (ImGui)
-│   └── engine/
-│       ├── mod_sieve.hpp     # 1次フィルター (ACL modint + Horner法)
-│       ├── exact_eval.hpp    # 2次フィルター (isqrt128 + 完全平方判定)
-│       ├── solver_engine.hpp # [新規] 非同期スレッド制御 & 有理点構造体
-│       └── solver_engine.cpp # [新規] パイプライン探索ルーチン
-```
+歴代は、
 
-main.cppが肥大化したのでこうするつもり...?
+- solver
+- resolve
+- QykIs
+- QykIs2 <-ｲﾏｺｺ
 
 ```text
 src/
 ├── main.cpp                  # 初期化とメインループのみ（50行程度）
 ├── app_state.hpp             # アプリ全体の状態 (ViewMode, AppState 構造体)
 ├── math/
-│   ├── integer_math.hpp    # clz128, isqrt128, check_perfect_square, SQ_MOD256
-│   ├── number_theory.hpp   # generate_primes
-│   ├── curve_eval.hpp      # eval_exact_deg3/4/5 (多項式評価)
-│   └── curve_transform.hpp # 有理変換・標準化・逆変換 (先ほど設計したもの)
+│   ├── integer_math.hpp      # clz128, isqrt128, check_perfect_square, SQ_MOD256
+│   ├── number_theory.hpp     # generate_primes
+│   ├── curve_eval.hpp        # eval_exact_deg3/4/5 (多項式評価)
+│   └── curve_transform.hpp   # 有理変換・標準化・逆変換 (先ほど設計したもの)
 ├── utils/
 │   ├── string_utils.hpp      # to_string_128
 │   └── history_manager.hpp   # HistoryManager / SearchSession
@@ -34,8 +28,8 @@ src/
 |   ├── view_history.cpp      # 履歴画面
 |   └── view_settings.cpp     # 設定画面
 └── engine/
-    ├── mod_sieve.hpp       # エンジン用フィルタリング (math/number_theoryを#include)
-    └── engine.hpp          # 探索のメインループ
+    ├── mod_sieve.hpp         # エンジン用フィルタリング (math/number_theoryを#include)
+    └── solver_engine.hpp     # 探索のメインループ
 ```
 
 解の見つけ方
@@ -70,7 +64,7 @@ src/
   ▼
 [3. Engine 起動] (engine/engine)
   │  Input : StandardCurveConfig
-  │  ・Engine は高速な整数演算・ふるい落とし（exact_eval / mod_sieve）だけに集中！
+  │  ・Engine : 高速な整数演算・ふるい落とし（exact_eval / mod_sieve）
   │
   ├─► [4. 標準形の解 (u, v) を発見]
   │     │  Engine の出力: 有理点 (u, v) [mpq_t または (X, d, Y)]

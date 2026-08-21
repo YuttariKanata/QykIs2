@@ -144,7 +144,7 @@ if (state.engine.is_searching()) {
 
     ImGui::Spacing();
     ImGui::Text("Status: %s", state.engine.is_searching() ? "SEARCHING..." : "IDLE");
-    ImGui::Text("Progress: %.1f%%", state.engine.get_progress() * 100.0);
+    ImGui::Text("Progress: %.3f%%", state.engine.get_progress() * 100.0);
     ImGui::Text("Points Found: %zu", state.found_log.size());
 
     ImGui::Spacing();

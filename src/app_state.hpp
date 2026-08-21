@@ -22,15 +22,15 @@ struct AppState {
     float left_pane_width = 450.0f;
 
     // 探索パラメータ入力値（有理数文字列で保持）
-    int selected_degree = 3;
+    int selected_degree = 4;
     std::string input_a = "1";
-    std::string input_b = "1";
-    std::string input_c = "0";
-    std::string input_d = "0";
-    std::string input_e = "0";
-    std::string input_f = "0";
+    std::string input_b = "-31790";
+    std::string input_c = "36941";
+    std::string input_d = "-56158";
+    std::string input_e = "28849";
+    std::string input_f = "22030";
     std::string input_g = "0";
-    int max_d = 50;
+    int max_d = 1000;
     int max_X = 1000;
 
     // 逆変換用情報をフレーム間で保持する変数

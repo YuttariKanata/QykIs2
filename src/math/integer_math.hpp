@@ -7,6 +7,7 @@
 #include <cstdint>
 #include <optional>
 #include <atcoder/modint>
+#include <vector>
 
 #if defined(__SIZEOF_INT128__)
     using int128_t = __int128_t;
@@ -20,6 +21,20 @@ inline constexpr int mod_p(int128_t val, int p) noexcept {
     int128_t m = val % p;
     if (m < 0) m += p;
     return static_cast<int>(m);
+}
+
+// d の相異なる素因数リストを取得するヘルパー
+static std::vector<int64_t> get_prime_factors(int64_t n) {
+    std::vector<int64_t> factors;
+    int64_t temp = n;
+    for (int64_t p = 2; p * p <= temp; ++p) {
+        if (temp % p == 0) {
+            factors.push_back(p);
+            while (temp % p == 0) temp /= p;
+        }
+    }
+    if (temp > 1) factors.push_back(temp);
+    return factors;
 }
 
 // --------------------------------------------------
